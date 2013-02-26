@@ -1,0 +1,77 @@
+/*
+	Node.js IRC Client Styles
+	Author: Elijah Cowley (GreyWolf)
+	Owner: EPCIT
+	Website: http://epcit.biz
+	IRC Server: irc://irc.epcit.biz:6667
+*/
+
+body {
+  overflow: hidden;
+}
+.channel_tab {
+  border: 1px solid #CCC;
+  border-radius: 5px 5px 0 0;
+  padding:5px;
+}
+.channel_tab:hover {
+  color: #FFF;
+  background: #00C;
+  cursor:pointer;
+}
+.channel_set {
+  /*position: absolute;*/
+  border: 1px solid #CCC;
+  display: none;
+  /*top: 35px;*/
+  width:100%;
+  height: 500px;
+  max-height: 99%;
+  margin-top: 5px;
+}
+.channel_topic {
+  /* background: #FFF; */
+  color: #000;
+  width: 100%;
+  text-align: center;
+  height: 25px;
+  max-height: 25px;
+  border-bottom: 1px solid #CCC;
+}
+.channel_window {
+  display: inline-block;
+  position: relative;
+  width:89%;
+  height: 475px;
+  max-height: 99%;
+  overflow: auto;
+  border-right: 1px solid #CCC;
+}
+.channel_names {
+  display: inline-block;
+  /*position: absolute;*/
+  /*top:0px;*/
+  width:10%;
+  height: 475px;
+  max-height: 99%;
+  overflow: auto;
+  float:right;
+  right: 0px;
+}
+.channel_name {
+  cursor:pointer;
+}
+.channel_name:hover {
+  color: #FFF;
+  background: #009;
+}
+.channel_mode {
+  vertical-align: middle;
+  margin-right: 2px;
+}
+.inputarea {
+  margin-top: 10px;
+}
+#sendtext {
+  width: 90%;
+}

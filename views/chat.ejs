@@ -1,0 +1,66 @@
+<!--
+	Node.js IRC Chat Page
+	Author: Elijah Cowley (GreyWolf)
+	Owner: EPCIT
+	Website: http://epcit.biz
+	IRC Server: irc://irc.epcit.biz:6667
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoIRC Client</title>
+  <link href="/stylesheets/chat.default.css" rel="stylesheet" title="default">
+  <link href="/stylesheets/chat.steel.css" rel="stylesheet" title="steel" disabled="true">
+  <link href="/stylesheets/chat.mini.css" rel="stylesheet" title="mini" disabled="true">
+  <script src="http://epcit.biz/js/jquery-1.7.1.min.js"></script>
+  <script src="http://au.epcit.biz:3000/socket.io/socket.io.js"></script>
+  <script type="text/javascript" src="/javascripts/alias.js"></script>
+  <script type="text/javascript" src="/javascripts/chat.js"></script>
+  <script type="text/javascript" src="/javascripts/menu.js"></script>
+</head>
+<body>
+  <h1>Node.js IRC Client</h1>
+    <div class="toolbar">
+      <label class="theme">Theme</label> <select class="theme" id="theme">
+        <option value="0">Default</option>
+        <option value="1">Steel</option>
+        <option value="2">Mini</option>
+      </select>
+    </div>
+    <div class="chantabs"><span class="channel_tab" id="tab_status">Status</span></div>
+
+    <div class="rc_menu" id="rc_menu">
+      <div class="rc_menuitem" id="whois" onclick="whoisClick()">Whois</div>
+      <div class="rc_menuitem" id="version" onclick="versionClick()">Version</div>
+      <hr>
+    </div>
+
+    <div class="window_set">
+      <div id="smsg" style="position:absolute; color:#00F; display:none;">Connecting...</div>
+      <div class="channel_set" id="status"><div class="channel_topic"></div><div class="channel_window"></div><div class="channel_names"></div></div>
+    </div>
+
+    <div class="inputarea">
+      <label>Send: </label><input type="text" id="sendtext" name="sendtext" placeholder="Type Message Here" autocomplete="off">
+      <input type="button" id="sendbtn" value="Send">
+    </div>
+  <script type="text/javascript" src="/javascripts/post_load.js"></script>
+<script>
+window.addEventListener("message", receiveMessage, false);
+function receiveMessage(event) {
+  //alert(in_array(config.site.allow,event.origin))
+
+  if (in_array(config.site.allow,event.origin) === true) {
+    var p = event.data.split(':');
+    if (p[0] == 'JOIN') Join(p[1]);
+    else if (p[0] == 'PART') Part(p[1]);
+  }
+
+}
+
+</script>
+</body>
+</html>
+

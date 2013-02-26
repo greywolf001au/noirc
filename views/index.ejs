@@ -1,0 +1,52 @@
+<!--
+	Node.js IRC Index Page
+	Author: Elijah Cowley (GreyWolf)
+	Owner: EPCIT
+	Website: http://epcit.biz
+	IRC Server: irc://irc.epcit.biz:6667
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+document.domain = "epcit.biz";
+</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoIRC Client</title>
+  <link href="/stylesheets/index.css" rel="stylesheet">
+  <script src="http://epcit.biz/js/jquery-1.7.1.min.js"></script>
+  <script type="text/javascript">
+  $(document).ready(function() {
+    $('.advanced_switch').click(function() {
+      if ($('.advanced_switch').html() == 'Advanced') $('.advanced_switch').html('Less Advanced');
+      else $('.advanced_switch').html('Advanced');
+      $('.advanced').toggle('fast');
+    });
+  });
+  </script>
+</head>
+
+<body>
+  <h1>Node.js IRC Client</h1>
+  <form name="form1" method="post" action="/">
+    <p>
+    <label>Nickname: </label><input type="text" name="nickname" placeholder="Enter Nickname">
+    </p>
+    <p>
+    <a href="#" class="advanced_switch">Advanced</a>
+    </p>
+    <div class="advanced">
+      <label>Theme</label> <select name="theme">
+        <option value="0">Default</option>
+        <option value="1">Steel</option>
+        <option value="2">Mini</option>
+      </select><br>
+      <label>Channels: </label><input type="text" name="channels" placeholder="Enter Channels" Value="default">
+    </div>
+    <p>
+    <input type="submit" value="Join Chat">
+    </p>
+  </form>
+</body>
+</html>
