@@ -1,5 +1,6 @@
 /*
 	Node.js IRC Client
+	Version: 0.0.1a
 	Author: Elijah Cowley (GreyWolf)
 	Owner: EPCIT
 	Website: http://epcit.biz
@@ -8,18 +9,31 @@
 
 // Required files
 var net = require('net')
-  , config = require('./noirc_config.js')
   , noircroutes = require('./routes/noircroutes.js')
   , express = require('express')
   , http = require('http')
   , url = require('url')
   , app = express.createServer()
-  , noirclib = require('./lib/noirclib.js')
-  , help = require('./help/help.' + config.app.language + '.js')
-  , locale = require('./locale/locale.' + config.app.language + '.js')
-  , irc_server = require('./lib/' + config.irc.server_type + '.js')
   , colors = require('colors')
   , term = require('termhelper')
+
+var config = {};
+try {
+	config = require('./noirc.config.js')
+	if (!config) {
+		console.log('Please remove the last two lines from noirc.config.js');
+		process.exit(1);
+	}
+	if (config.kill) process.exit();
+} catch (ex) {
+	term.Writeln('Did you forgot to rename your config?')
+	process.exit(1)
+}
+
+var noirclib = require('./lib/noirclib.js')
+  , irc_server = require('./lib/' + config.irc.server_type + '.js')
+  , locale = require('./locale/locale.' + config.app.language + '.js')
+  , help = require('./help/help.' + config.app.language + '.js')
 
 // Configure Node.js App
 app.configure(function() {
@@ -101,7 +115,6 @@ app.post('/', function(req, res) {
     pass: pass,
     status: status,
   })
-  //res.redirect('/chat');
   res.render('chat');
 });
 
@@ -109,9 +122,6 @@ app.post('/', function(req, res) {
 var irc = new Array();
 var io;
 var connection = new Array();
-//var nick = [];
-//var channels = 'default';
-//var theme = 0;
 
 // Start Express Server
 app.listen(config.app.port);
@@ -121,15 +131,12 @@ console.log(ReplaceVars(locale.app_version + '\n' + locale.server_start));
 
 // Setup Socket.IO
 io = require('socket.io').listen(app);
-
-// Start Socket.IO
 io.set('log level', config.io.log_level);
-
 
 // Socket.IO event handlers
 io.sockets.on('connection', function(socket) {
   socket.emit('config', { site_allow: config.site.allow.join(',') });
-  socket.emit('chat', { from: 'node.js', status: 'status request' });
+  socket.emit('chat', { from: config.admin.nick, status: 'status request' });
   // Process User Commands
   socket.on('clientchat', function(data) {
     if (data.status && data.status == 'not connected') {
@@ -138,21 +145,21 @@ io.sockets.on('connection', function(socket) {
       // Connect User
       irc[uid] = {};
       socket.set('store', { irc_id: uid });
-      socket.emit('chat', { from: 'node.js', irc_id: uid.toString(), connection: connection[uid], channel: 'status', notice: 'Connecting' });
+      socket.emit('chat', { from: config.admin.nick, irc_id: uid.toString(), connection: connection[uid], channel: 'status', notice: 'Connecting' });
 
       if (connection[uid].theme && connection[uid].theme != 0) socket.emit('chat', { setStyle: connection[uid].theme });
       if (connection[uid].status) socket.emit('chat', { setStatus: connection[uid].status });
 
       if (connection[uid]) connect(uid, connection[uid], socket);
-      else socket.emit('chat', { from: 'node.js', irc_id: uid.toString(), connection: connection[uid], channel: 'status', notice: 'Error connecting' });
+      else socket.emit('chat', { from: config.admin.nick, irc_id: uid.toString(), connection: connection[uid], channel: 'status', notice: 'Error connecting' });
     } else if (data.status && data.status == 'connected') {
       // Send Disconnected Message To User (allows user to reconnect without page refresh)
-      socket.emit('chat', { from: 'node.js', channel: 'status', notice: 'Disconnected' });
+      socket.emit('chat', { from: config.admin.nick, channel: 'status', notice: 'Disconnected' });
     } else if (data.irc_id) {
       var id = parseInt(data.irc_id);
       if (config.app.debug == true) { console.log("IRC ID: " + data.irc_id); term.Prompt(); }
 
-      if (data.notice && data.notice == 'Reconnect' && irc[id]) {
+      if (data.notice && data.notice == config.admin.nick && irc[id]) {
         // Auto Reconnect User
         irc.splice(id,1);
         var uid = irc.length;
@@ -204,64 +211,7 @@ io.sockets.on('connection', function(socket) {
 // start emitting keypress events
 //keypress(process.stdin);
 process.stdin.setEncoding(config.app.encoding);
-/*
-var input = {
-  string: '',
-  history: [],
-  history_position: -1
-}
-*/
-// listen for the "keypress" event
-/*
-term.on('keypress', function (ch, key) {
-  input.string += ch;
-  //console.log('got "keypress"', key);
-  if (key && key.name == 'enter') {
-    if (input.string.substr(input.string.length-1,1) == '\r') input.string = input.string.substr(0,input.string.length-1);
-    input.string += '\n';
-    process.stdout.write('\n');
-    ProcessInput(input.string);
-    input.history.push(input.string);
-    input.string = '';
-    input.history_position = input.history.length - 1;
-    //Prompt();
-    //process.stdin.pause();
-  } else if (key && key.name == 'up' && input.history_position > -1) {
-    process.stdout.clearLine();  // clear current text
-    process.stdout.cursorTo(0);
-    Prompt();
-    if (input.history_position > 0) input.history_position -= 1;
-    if (input.history_position < input.history.length && input.history_position > -1) {
-    process.stdout.write(input.history[input.history_position].substr(0,input.history[input.history_position].length - 1));
-    input.string = input.history[input.history_position].substr(0,input.history[input.history_position].length - 1);
-    }
-  } else if (key && key.name == 'down' && input.history_position < input.history.length + 1) {
-    process.stdout.clearLine();  // clear current text
-    process.stdout.cursorTo(0);
-    Prompt();
-    if (input.history_position < input.history.length && input.history_position > -1) {
-      process.stdout.write(input.history[input.history_position].substr(0,input.history[input.history_position].length - 1));
-      input.string = input.history[input.history_position].substr(0,input.history[input.history_position].length - 1);
-    } else {
-      input.string = '';
-    }
-    input.history_position += 1;
-  } else if (ch) {
-    process.stdout.write(ch);
-  }
-});
-*/
-//process.stdin.setRawMode(true);
 
-// Resume STDIN
-//process.stdin.resume();
-
-// Show Prompt
-/*
-function Prompt() {
-  process.stdout.write(locale.prompt);
-}
-*/
 term.set({ debug: false, prompt: locale.prompt });
 term.on('line',ProcessInput);
 
@@ -272,16 +222,16 @@ term.Prompt();
 function ProcessInput(data) {
   // Clear Console
   if (data == 'clear\n') {
-    process.stdout.write('\u001B[2J\u001B[0;0f');
-    console.log(ReplaceVars(locale.app_version));
+    term.Write('\u001B[2J\u001B[0;0f');
+    term.Writeln(ReplaceVars(locale.app_version));
   }
   // Show Users Count
-  if (data == 'users\n') console.log(ReplaceVars(locale.users));
+  if (data == 'users\n') term.Writeln(ReplaceVars(locale.users));
   // Straight Close Command Exits App
   if (data.substr(0,6) == 'close\n') {
     irc.forEach(function(con) {
       if (con) {
-        irc[con.id].io.emit('chat', { from: 'node.js', channel: 'status', notice: locale.connection_kill });
+        irc[con.id].io.emit('chat', { from: config.admin.nick, channel: 'status', notice: locale.connection_kill });
         irc[con.id].io.disconnect();
         //irc[con.id].socket.destroy();
         irc.splice(con.id,1);
@@ -295,7 +245,7 @@ function ProcessInput(data) {
     if (users == '*' || users == '-1') {
       // Close All Connections
       irc.forEach(function(con) {
-        irc[con.id].io.emit('chat', { from: 'node.js', channel: 'status', notice: locale.connection_kill });
+        irc[con.id].io.emit('chat', { from: config.admin.nick, channel: 'status', notice: locale.connection_kill });
         irc[con.id].io.disconnect();
         //irc[con.id].socket.destroy();
         irc.splice(con.id,1);
@@ -304,8 +254,8 @@ function ProcessInput(data) {
       // Close Multiple Connections
       var ul = users.split(' ');
       ul.forEach(function(u) {
-	u = parseInt(u)
-        irc[u].io.emit('chat', { from: 'node.js', channel: 'status', notice: locale.connection_kill });
+		u = parseInt(u)
+        irc[u].io.emit('chat', { from: config.admin.nick, channel: 'status', notice: locale.connection_kill });
         irc[u].io.disconnect();
         //irc[u].socket.destroy();
         irc.splice(u,1);
@@ -313,7 +263,7 @@ function ProcessInput(data) {
     } else {
       // Close Single Connection
       var u = parseInt(users);
-      irc[u].io.emit('chat', { from: 'node.js', channel: 'status', notice: locale.connection_kill });
+      irc[u].io.emit('chat', { from: config.admin.nick, channel: 'status', notice: locale.connection_kill });
       irc[u].io.disconnect();
       irc[u].socket.destroy();
       irc.splice(u,1);
@@ -327,7 +277,7 @@ function ProcessInput(data) {
     if (users == '*') {
       // Close All Connections
       irc.forEach(function(con) {
-        irc[con.id].io.emit('chat', { from: 'node.js', channel: 'status', notice: locale.connection_kill });
+        irc[con.id].io.emit('chat', { from: config.admin.nick, channel: 'status', notice: locale.connection_kill });
         irc[con.id].io.disconnect();
         irc[con.id].socket.destroy();
         irc.splice(con.id,1);
@@ -338,7 +288,7 @@ function ProcessInput(data) {
       ul.forEach(function(u) {
         irc.forEach(function(con) {
           if (con.nickname == u) {
-            irc[con.id].io.emit('chat', { from: 'node.js', channel: 'status', notice: locale.connection_kill });
+            irc[con.id].io.emit('chat', { from: config.admin.nick, channel: 'status', notice: locale.connection_kill });
             irc[con.id].io.disconnect();
             irc[con.id].socket.destroy();
             irc.splice(con.id,1);
@@ -349,7 +299,7 @@ function ProcessInput(data) {
       // Close Single Connection
       irc.forEach(function(con) {
         if (con.nickname == users) {
-          irc[con.id].io.emit('chat', { from: 'node.js', channel: 'status', notice: locale.connection_kill });
+          irc[con.id].io.emit('chat', { from: config.admin.nick, channel: 'status', notice: locale.connection_kill });
           irc[con.id].io.disconnect();
           irc[con.id].socket.destroy();
           irc.splice(con.id,1);
@@ -363,10 +313,10 @@ function ProcessInput(data) {
   if (data == 'debug\n') {
     if (config.app.debug == true) {
       config.app.debug = false;
-      console.log('Debug Mode: Off');
+      term.Writeln(locale.labels.debug + locale.values.off);
     } else {
       config.app.debug = true;
-      console.log('Debug Mode: On');
+      term.Writeln(locale.labels.debug + locale.values.on);
     }
   }
   // Change Prompt
@@ -377,18 +327,20 @@ function ProcessInput(data) {
   // List Online Users
   if (data == 'list\n') {
     irc.forEach(function(con) {
-      console.log('[' + con.id + ']' + con.nickname + ': ' + con.io.handshake.address.address);
+      term.Writeln('[' + con.id + ']' + con.nickname + ': ' + con.io.handshake.address.address);
     });
   }
   // Output Node.js IRC Version
-  if (data == 'version\n') console.log('0.0.1a');
+  if (data == 'version\n') term.Writeln(lib.version);
+  // Output NoIRC Owner
+  if (data == 'owner\n') term.Writeln(lib.owner);
   // Output Node.js IRC Author
-  if (data == 'author\n') console.log('EPCIT');
+  if (data == 'author\n') term.Writeln(lib.author);
   // Exit Node.js IRC
   if (data == 'quit\n' || data == 'exit\n') process.exit();
   // Output Node.js IRC Help
   if (data.substr(0,4) == 'help') {
-    console.log(noirclib.getHelp(data.substr(4)))
+    term.Writeln(noirclib.getHelp(data.substr(4)))
   }
   // Output Prompt
   term.Prompt();
@@ -430,7 +382,7 @@ function connect(id, con, iosock) {
   // Bind User Functions
   irc[id].send = function(sock,msg) {
     sock.write(msg + '\n\r');
-    if (config.app.debug == true) { console.log("<"+sock.remoteAddress + ":" + sock.remotePort+"> " + msg); term.Prompt(); }
+    if (config.app.debug == true) { term.Writeln("<"+sock.remoteAddress + ":" + sock.remotePort+"> " + msg); term.Prompt(); }
   };
 
   irc[id].put = function(msg) {
@@ -441,11 +393,11 @@ function connect(id, con, iosock) {
   irc[id].socket.on('connect', onConnect.bind(irc[id]));
   irc[id].socket.on('data', onData.bind(irc[id]));
   irc[id].socket.on('close', function (socket) {
-    if (config.app.debug == true) { console.log("Disconnected"); term.Prompt(); }
+    if (config.app.debug == true) { term.Writeln(locale.labels.disconnect); term.Prompt(); }
     if (irc[this.id]) irc[this.id].io.disconnect();
   }.bind(irc[id]));
   irc[id].socket.on('error', function () {
-    if (config.app.debug == true) console.log("Unable to connect to server");
+    if (config.app.debug == true) term.Writeln(locale.error.connect);
   }.bind(irc[id]));
 
   irc[id].io.on('disconnect', function() {
@@ -460,17 +412,18 @@ function connect(id, con, iosock) {
 
 // Connect Event Handler Method
 function onConnect() {
-  if (config.app.debug == true) console.log(this.nickname + " connected");
+  if (config.app.debug == true) term.Writeln(this.nickname + " " + locale.labels.connect);
   setTimeout(function() {
     if (this.pass != '') this.send(this.socket, 'PASS ' + this.pass);
     this.send(this.socket, 'NICK ' + this.nickname);
-    this.send(this.socket, 'USER ' + this.username + ' 8 * :Node.js IRC client');
+    this.send(this.socket, 'USER ' + this.username + ' 8 * :' + config.irc.client);
+    // add alt-nick here
   }.bind(this), 500);
 }
 
 // Net Socket Data Event Handler Method
 function onData(data) {
-  var adata = data.split('\r\n');
+  var adata = data.split(config.socket.lineEnd);
   adata.forEach(function(data) {
     var echo = true;
 
@@ -484,7 +437,7 @@ function onData(data) {
       setTimeout(function() {
         for (var i = 0; i < this.channels.length; i++) {
           this.send(this.socket, "JOIN " + this.channels[i]);
-          if (config.app.debug == true) { console.log("JOIN " + this.channels[i]);  term.Prompt(); }
+          if (config.app.debug == true) { term.Writeln("JOIN " + this.channels[i]);  term.Prompt(); }
         }
       }.bind(irc[this.id]), 1000);
     }
@@ -498,14 +451,16 @@ function onData(data) {
       }
     }
 
-    // Send Ping Reply To IRC Server (set echo to true to pass the ping to the user)
+    /*
+    	Send Ping Reply To IRC Server (set echo to true to pass the ping to the user)
+    */
     //if (idata.raw == "PING") {
     //  echo = false;
     //  this.send(this.socket, "PONG " + idata.msg);
     //}
 
     // Output Debug Message (comment first and remove comment on second line to display post-processed messages)
-    if (config.app.debug == true) { console.log(data); term.Prompt(); } // Show Entire Server Message
+    if (config.app.debug == true) { term.Writeln(data); term.Prompt(); } // Show Entire Server Message
     //if (config.app.debug == true && echo == true && idata.msg != '' && idata.msg != ' ') console.log(idata.raw + ': <' + idata.channel + '> ' + idata.msg);
 
     // Send Data To User
@@ -515,20 +470,9 @@ function onData(data) {
       if (this.nickname) sendval.mynick = this.nickname;
       if (irc[this.id].prefix) sendval.prefix = irc[this.id].prefix;
       if (irc[this.id].chantypes) sendval.chantypes = irc[this.id].chantypes;
-/*
-      if (idata.raw) sendval.raw = idata.raw;
-      if (idata.msg) sendval.message = idata.msg;
-      if (idata.notice) sendval.notice = idata.notice;
-      if (idata.channel) sendval.channel = idata.channel;
-      if (idata.mode) sendval.mode = idata.mode;
-      if (idata.users) sendval.users = idata.users;
-      if (idata.from) sendval.from = idata.from;
-      if (idata.topic) sendval.topic = idata.topic;
-      if (idata.topic_setby) sendval.topic_setby = idata.topic_setby;
-*/
         if (sendval.raw != '000' || sendval.message != '' || sendval.notice != '' || sendval.topic != '' || sendval.topic_setby != '') {
           irc[this.id].put(sendval);
-          if (config.app.debug == true) { console.log(sendval); term.Prompt(); }
+          if (config.app.debug == true) { term.Writeln(sendval); term.Prompt(); }
         }
       }
     }
@@ -538,8 +482,8 @@ function onData(data) {
 // Replace Variables In Strings ( variables take the form %var% )
 function ReplaceVars(data) {
   if (data.indexOf('%users%') !== -1 && irc.length > 99) data = data.replace('%users%', irc.length.toString().green);
-  if (data.indexOf('%users%') !== -1 && irc.length > 0) data = data.replace('%users%', irc.length.toString().yellow);
-  if (data.indexOf('%users%') !== -1 && irc.length == 0) data = data.replace('%users%', irc.length.toString().red);
+  else if (data.indexOf('%users%') !== -1 && irc.length > 0) data = data.replace('%users%', irc.length.toString().yellow);
+  else if (data.indexOf('%users%') !== -1 && irc.length == 0) data = data.replace('%users%', irc.length.toString().red);
   if (data.indexOf('%port%') !== -1) data = data.replace('%port%', config.app.port);
   if (data.indexOf('%version%') !== -1) data = data.replace('%version%', app.version);
   return data;
