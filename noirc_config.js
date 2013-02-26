@@ -39,8 +39,8 @@ module.exports = {
       'http://epcit.biz',
       'http://au.epcit.biz'
     ),
-    // Administrator Settings
   },
+  // Administrator Settings
   admin: {
     nick: 'NoIRC',
   }

@@ -26,7 +26,7 @@ try {
 	}
 	if (config.kill) process.exit();
 } catch (ex) {
-	term.Writeln('Did you forgot to rename your config?')
+	console.log('Did you forgot to rename your config?')
 	process.exit(1)
 }
 
