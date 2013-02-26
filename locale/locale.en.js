@@ -23,7 +23,7 @@ module.exports = {
   values: {
   	on: 'On',
   	off: 'Off',
-  }
+  },
   warnings: {
   	
   },
