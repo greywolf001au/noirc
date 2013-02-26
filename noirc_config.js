@@ -40,9 +40,9 @@ module.exports = {
       'http://au.epcit.biz'
     ),
     // Administrator Settings
-    admin: {
-      nick: 'NoIRC',
-    }
+  },
+  admin: {
+    nick: 'NoIRC',
   }
 }
 

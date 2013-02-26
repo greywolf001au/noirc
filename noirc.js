@@ -127,7 +127,7 @@ var connection = new Array();
 app.listen(config.app.port);
 
 // Output Server Start Message
-console.log(ReplaceVars(locale.app_version + '\n' + locale.server_start));
+term.Writeln(ReplaceVars(locale.app_version + '\n' + locale.server_start));
 
 // Setup Socket.IO
 io = require('socket.io').listen(app);
